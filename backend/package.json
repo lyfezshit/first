@@ -1,0 +1,19 @@
+{
+  "name": "shawtyy",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "pm2:start": "pm2 start src/index.js --name shawty-api",
+    "pm2:stop": "pm2 stop shawty-api",
+    "pm2:restart": "pm2 restart shawty-api",
+    "pm2:delete": "pm2 delete shawty-api"
+  },
+  "dependencies": {
+    "hono": "^4.8.2",
+    "puppeteer": "^24.10.2",
+    "@hono/node-server": "^1.7.0"
+  }
+}
