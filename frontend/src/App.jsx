@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Toaster, toast } from 'sonner';
 import Button from './component/button';
 import Input from './component/input';
+import { useRef } from 'react';
+
 
 
 function App() {
@@ -14,7 +16,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [imgSrc, setImgSrc] = useState('');
   const [fullPage, setFullPage] = useState(false);
-
+  const imgRef = useRef(null);
   const [filename, setFilename] = useState('screenshot.png');
   const [customclass, setCustomClass] = useState('')
 
@@ -33,6 +35,7 @@ function App() {
 
       const blob = await Image.blob();
       setImgSrc(URL.createObjectURL(blob));
+      await copyImageBlobToClipboard(blob);
 
     } catch (err) {
       setError(err.message);
@@ -43,16 +46,36 @@ function App() {
 
 
   };
+  const handleImageClick = () => {
+    if (imgRef.current) {
+       if (imgRef.current.requestFullscreen) {
+        imgRef.current.requestFullscreen();
+      } else if (imgRef.current.webkitRequestFullscreen) {
+        imgRef.current.webkitRequestFullscreen();
+      } else if (imgRef.current.msRequestFullscreen) {
+        imgRef.current.msRequestFullscreen();
+      }
+      
+    }
+  };
+
+  const copyImageBlobToClipboard = async (blob) => {
+    try {
+      await navigator.clipboard.write([
+        new window.ClipboardItem({ [blob.type]: blob })
+      ]);
+      toast.success('Image copied to clipboard!');
+    } catch (err) {
+      toast.error('Failed to copy image:' + err.message);
+    }
+  }
 
   const copyImageToClipboard = async () => {
     if (!imgSrc) return;
     try {
       const data = await fetch(imgSrc);
       const blob = await data.blob();
-      await navigator.clipboard.write([
-        new window.ClipboardItem({ [blob.type]: blob })
-      ]);
-      toast.success('Image copied to clipboard!');
+      await copyImageBlobToClipboard(blob);
     } catch (err) {
       toast.error('Failed to copy image: ' + err.message);
     }
@@ -60,6 +83,12 @@ function App() {
 
   const downloadImageToClipboard = () => {
     if (!imgSrc) return;
+    let name = filename.trim();
+
+    if (!name.toLowerCase().endsWith('.png')) {
+      name = name.replace(/\.[^/.]+$/, "");
+      name += '.png';
+    }
     const link = document.createElement('a');
     link.href = imgSrc;
     link.download = filename || 'screenshot.png';
@@ -81,7 +110,7 @@ function App() {
         closeButton />
       <div>
         <nav className="w-full py-3 bg-cyan-950 mb-6 px-4">
-          <h1 className="text-3xl">Screenshot Provider</h1>
+          <h1 className="text-3xl">Shawtyy</h1>
         </nav>
         <div className="flex px-4 py-4 gap-8">
 
@@ -97,12 +126,6 @@ function App() {
                 <Input label={'Scale:'} type={'number'} value={scale} onChange={e => setScale(e.target.value)}></Input>
               </div>
 
-
-
-
-
-
-
               <div className='rounded-lg bg-cyan-800 px-2 py-2 mb-2'>
                 <label>
                   <input type="checkbox"
@@ -116,7 +139,7 @@ function App() {
                 <span>Custom Class:</span>
                 <textarea name="" id="" className='bg-cyan-800 rounded-lg outline-none p-1' onChange={e => setCustomClass(e.target.value)}></textarea></div>
 
-              <Button type={'submit'}>{loading ? 'Loading...' : 'Get Screenshot'}</Button>
+              <Button type={'submit'}>{loading ? 'Capturing...' : 'Get Screenshot'}</Button>
 
 
             </form>
@@ -129,27 +152,27 @@ function App() {
 
           <div className="flex-1 flex items-start justify-center gap-4">
             {imgSrc && (
-              <>
+              <div className="flex flex-col items-center w-full">
                 <img
+                  ref={imgRef}
                   src={imgSrc}
                   alt="preview"
-                  className="mt-5 w-full max-w-lg border object-contain border-gray-400 "
+                  className="mt-5 w-full max-w-lg border object-contain border-gray-400"
+                  onClick={handleImageClick}
                 />
-
-                <Button type={'button'} onClick={copyImageToClipboard}>Copy Image</Button>
-                <div className="">File name:
-                  <label className='rounded-lg bg-cyan-800 p-2' >
-                    <input type="text" value={filename} onChange={e => setFilename(e.target.value)}
-                      placeholder='screenshot.png'
-                      className='text-white outline-none ml-2' required />
-
-                  </label>
+                <div className="flex flex-col items-center w-full mt-4 gap-2">
+                  <Input
+                    label={'File Name:'}
+                    type={'text'}
+                    value={filename}
+                    onChange={e => setFilename(e.target.value)}
+                  />
+                  <div className="flex gap-4 mt-2">
+                    <Button type={'button'} onClick={copyImageToClipboard}>Copy Image</Button>
+                    <Button type={'button'} onClick={downloadImageToClipboard}>Download Image</Button>
+                  </div>
                 </div>
-
-
-                <Button type={'button'} onClick={downloadImageToClipboard}>Download Image</Button>
-
-              </>
+              </div>
             )}
           </div>
 

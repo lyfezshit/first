@@ -17,31 +17,39 @@ app.get('/screenshot', async (c) => {
   const fullPage = c.req.query('fullPage') === 'true';
   const customclass = c.req.query('customclass')
 
-  console.log(customclass)
+  
+  const sanitizedClass = customclass
+    ? customclass.replace(/[<>"';]/g, '').trim()
+    : '';
 
-  if (!url) {
-    return c.text('Missing parameter', 400)
+  if (!url || !/^https?:\/\/.+/i.test(url)) {
+
+    return c.text('Invalid or missing URL', 400)
   }
-
-
+  if (isNaN(width) || width < 100 || width > 5000) {
+    return c.text('Invalid width (100-5000 allowed)', 400);
+  }
+  if (isNaN(height) || height < 100 || height > 5000) {
+    return c.text('Invalid height (100-5000) allowed)', 400);
+  }
+  if (isNaN(scale) || scale < 1 || scale > 5) {
+    return c.text('Invalid scale(1-5)', 400);
+  }
 
   let browser;
   try {
     browser = await puppeteer.launch();
     const page = await browser.newPage();
 
-
-
     await page.setViewport({ width, height, deviceScaleFactor: scale });
-
     await page.goto(url, { waitUntil: 'networkidle2' });
 
-    if (customclass) {
+    if (sanitizedClass) {
       await page.evaluate((sel) => {
         document.querySelectorAll(sel).forEach((el) => {
           el.style.display = 'none';
         });
-      }, customclass);
+      }, sanitizedClass);
     }
 
     const screenshot = await page.screenshot({
